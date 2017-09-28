@@ -1,2 +1,0 @@
-# Udemy
-Udemy course notes

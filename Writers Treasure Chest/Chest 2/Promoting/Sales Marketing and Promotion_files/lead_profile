@@ -1,0 +1,494 @@
+
+window['kartra'] = 'undefined' === typeof window['kartra'] ? [] : window['kartra'];
+
+var $agendaLibrary = window['kartra']['agendaLibrary'];
+
+$(window).load(function() {
+    setTimeout(function () {
+        $('.js_slim_element').each(function(i, el){
+            new Slim(el, {
+                ratio: '1:1',
+                size: {
+                    width: 320,
+                    height: 320,
+                },
+                willSave: function(data, ready) {
+                    $('.js_save_profile').prop('disabled', true);
+                    ready(data);
+                },
+                didUpload: function(error, data, response){
+                    $("#userfile_hidden").val(response.file);
+                    $('.js_save_profile').prop('disabled', false);
+                },
+                label: '<img src="' + default_user_image + '">',
+                service: upload_url,
+                download: false,
+                push: true,
+                meta: {
+                    updateId: lead_id,
+                    section: 'lead_modal'
+                }
+            }).load(lead_picture, function(error, data) {});
+        });
+    }, 200);
+
+    $(document).on('click', '.lead_profile', function() {
+        $('#lead_profile').modal('show');
+    });
+});
+
+$(document).ready(function() {
+
+    if(!( /Android|webOS|iPhone|iPad|iPod|BlackBerry/i.test(navigator.userAgent) )) {
+        $(function () {
+            $('#change_password').tooltip({
+                container: "body",
+                trigger: "hover"
+            });
+            $('.selectpicker').selectpicker();
+        });
+    } else {
+        $('.selectpicker').selectpicker('mobile');
+
+    }
+
+    $(document).on('click', '#change_password', function() {
+        $('#lead_profile').modal('hide');
+
+        setTimeout(function () {
+            $('#ch_pass').modal('show');
+        }, 300);
+    });
+
+    $('#ch_pass').on('shown.bs.modal', function () {
+        $('body').addClass('modal-open');
+    });
+
+    $('#ch_pass').on('hidden.bs.modal', function () {
+        $('#ch_pass .help-block-error').html('Required');
+        $('#change_pass_form input').removeClass('error');
+        $('#ch_pass .help-block-error').hide();
+        $('#ch_pass input').val('');
+        setTimeout(function () {
+            $('#lead_profile').modal('show');
+        }, 100);
+    });
+
+    $('#lead_profile').on('hidden.bs.modal', function() {
+        $('body').css('padding-right', '0px');
+        $('#lead_profile input').removeClass('error');
+        $('#lead_profile .help-block').hide();
+        $('#lead_profile .js_spinning_wheel').hide();
+        $('#lead_profile .js_lead_profile_tab_content').show();
+    });
+
+    $('#savingModal').on('hidden.bs.modal', function() {
+        $('body').css('padding-right', '0px');
+    });
+
+    //overwrite the default ajaxform
+    $('#profile_details').ajaxForm({
+        beforeSubmit:function(){
+            $('#lead_profile .js_lead_profile_tab_content').hide();
+            $('#lead_profile .js_spinning_wheel').show();
+        },
+        success: function(data) {
+            if ('undefined' === typeof data.result) {
+                $('#lead_profile .js_spinning_wheel').hide();
+                $('#lead_profile .js_lead_profile_tab_content').show();
+                
+                return false;
+            }
+
+            if (data.result !== 'error') {
+                $('#lead_profile').modal('hide');
+                $('#lead_profile input').removeClass('error');
+                $('#lead_profile .help-block').hide();
+                $('#savingModal .modal-title').html(data.title);
+                $('#savingModal').modal('show');
+            } else {
+                $.each(data.errors, function(index, element) {
+                    var $input        = $('input[name="' + index + '"]'),
+                        $errorWrapper = $input.siblings('.js_error_wrapper'),
+                        $errorText    = $errorWrapper.find('.js_error_text');
+
+                    $input.addClass('error');
+                    $errorText.text(element);
+                    $errorWrapper.show();
+                });
+
+                $('#lead_profile .js_spinning_wheel').hide();
+                $('#lead_profile .js_lead_profile_tab_content').show();
+            }
+        }
+    });
+
+    $(document).on('click', '#lead_profile .js_save_profile', function(e) {
+        e.preventDefault();
+        if (valid_lead_profile()) {
+            $('#profile_details').submit();
+        }
+    });
+
+	$(document).on('change', '#country_id', function() {
+		var $self = $(this);
+		$.ajax({
+		  url: profile_action_url+"/ajax_do_get_state/" + $self.find('option:selected').val(),
+		  cache: false,
+		  success: function(html){
+			$("select#state_subdivision_id").html(html);
+			$('#state_subdivision_id.selectpicker').selectpicker('refresh');
+              $('#country_id_error').hide();
+              $self.siblings('.bootstrap-select').find('button.dropdown-toggle').removeClass('error');
+              $('#state_subdivision_id_error').hide();
+              $('#state_subdivision_id').siblings('.bootstrap-select').find('button.dropdown-toggle').removeClass('error');
+		  }
+		});  
+	});
+
+	if ($('#country_id').val() != '' && $('#country_id').val() != null) {
+        $.ajax({
+            url: profile_action_url +"/ajax_do_get_state/"+$("#country_id option:selected").val(),
+            cache: false,
+            success: function(html){
+                $("select#state_subdivision_id").html(html);
+                $('#state_subdivision_id.selectpicker').selectpicker('refresh');
+
+            }
+        });
+	}
+	
+    $(document).on('click', '#my_events .js_details_subscription', function() {
+        var $button = $(this),
+            $subscription = $button.parents('.js_calendar_subscription_holder'),
+            subscription_id = $button.attr('data-subscription-id');
+
+        $button.tooltip('hide');
+
+        if ($(this).parents('.js_panel').hasClass('expanded')) {
+            $(this).parents('.js_panel').removeClass('expanded');
+            $(this).parents('.js_panel').find('.js_panel_footer').slideUp(300);
+            $button.attr('data-original-title', 'Show sessions');
+        } else {
+            $(this).parents('.js_panel').addClass('expanded');
+            $(this).parents('.js_panel').find('.js_panel_footer').slideDown(300);
+            $button.attr('data-original-title', 'Hide sessions');
+            $subscription.find('.js_calendar_subscription_event').remove();
+
+            loadEvents($subscription, subscription_id);
+        }
+    });
+
+	$('#change_password').on('click', function() {
+		$('#change_pass_form').clearForm();
+		$('.ch_pass_change').show();
+		$('.ch_pass_change_success').hide();
+		$('.ch_pass_save').show();
+		$('.ch_pass_close').show();
+	});
+	
+	$('.js_my_account').on('click', function() {
+		$('.js_save_profile').show();
+	});
+
+	$('.js_my_events').on('click', function() {
+		$('.js_save_profile').hide();
+        loadCalendars();
+        
+	});
+
+    $(document).on('click', '#my_events .js_calendar_subscription_show_more', function() {
+        var $button = $(this),
+            $subscription = $button.parents('.js_calendar_subscription_holder'),
+            subscription_id = $button.attr('data-subscription-id');
+        loadEvents($subscription, subscription_id);
+    });
+
+    $(document).on('change', '.js_lead_preferred_time_zone', function() {
+        loadCalendars();
+    });
+
+    $(document).on('click', '#my_events .js_cancel_event', function() {
+        var $button         = $(this),
+            $subscription   = $button.parents('.js_calendar_subscription_holder'),
+            subscription_id = $button.attr('data-subscription-id');
+
+        $.ajax({
+            url: profile_action_url + '/cancelEvent',
+            data: {
+                event_id : $button.attr('data-action-id')
+            },
+            type: 'POST',
+            cache: false,
+            success: function(response) {
+                if ('success' === response.result) {
+                    $button.tooltip('hide');
+                    $subscription.find('.js_calendar_subscription_event').remove();
+                    $subscription.find('.js_events_list_header_row').hide();
+
+                    if ('undefined' !== typeof $agendaLibrary) {
+                        $agendaLibrary.element.fullCalendar('refetchEvents');
+                    }
+
+                    setTimeout(function () {
+                        loadEvents($subscription, subscription_id);
+                    }, 300);
+                } else {
+                    window.location.reload();
+                }
+            }
+        });
+    });
+
+    $(document).on('click', '#my_events .js_cancel_subscription', function() {
+        var $button = $(this);
+
+        $.ajax({
+            url: profile_action_url + '/ajaxCancelSubscription',
+            data: {
+                subscription_id: $button.attr('data-subscription-id')
+            },
+            type: 'POST',
+            cache: false,
+            success: function(response){
+                if ('undefined' !== typeof $agendaLibrary) {
+                    $agendaLibrary.element.fullCalendar('refetchEvents');
+                }
+
+                setTimeout(function(){
+                    loadCalendars();
+                }, 300);
+            }
+        });
+    });
+
+    $(document).on('click focus', '#change_pass_form input', function(){
+        $(this).removeClass('error');
+    	$(this).siblings('.help-block-error').hide();
+    });
+
+    var options2 = {
+        beforeSubmit:function(){
+        	var error = false;
+            $('#change_pass_form input.required').each(function(){
+            	if ($(this).val() === '') {
+            		$(this).addClass('error');
+                    $(this).siblings('.help-block-error').show();
+                    error = true;
+				}
+			});
+
+            if ($("#change_pass_form #repassword").val() !== $("#change_pass_form #password").val()) {
+                $("#change_pass_form #repassword").addClass('error');
+                $("#change_pass_form #repassword").siblings('.help-block-error').html('The retyped password does not match').show();
+                error = true;
+			}
+
+			if ($("#change_pass_form #password").val().length > 0 && $("#change_pass_form #password").val().length < 8) {
+                $("#change_pass_form #password").addClass('error');
+            	$("#change_pass_form #password").siblings('.help-block-error').html('Your password must be minimum 8 characters').show();
+                error = true;
+			}
+
+			if (error === true) {
+            	return false;
+			}
+        },
+        success: showResponsePass,  // post-submit callback
+        clearForm: false,        	// clear all form fields after successful submit
+        resetForm: false        		// reset the form after successful submit
+    };
+
+    $('#change_pass_form').ajaxForm(options2);
+
+	$('.js_slim_element').fadeIn();
+
+     $(document).on('click', '.js_calendar_cancel_action', function(e){
+        var cancelType = $(this).attr('data-title');
+        $('.js_cancel_title').text(cancelType);
+    });
+});
+
+function loadCalendars() {
+    $.ajax({
+        url: profile_action_url + '/loadCalendars',
+        data: {
+            timezone: $('select.js_lead_preferred_time_zone').val()
+        },
+        type: 'POST',
+        cache: false,
+        beforeSend: function() {
+            $('#my_events > .js_spinning_wheel').show();
+            $('#my_events > .js_my_events_holder').hide();
+        },
+        success: function(response){
+            $('.js_lead_profile_subscriptions_list').html(response.html);
+            $('#my_events > .js_spinning_wheel').hide();
+            $('#my_events > .js_my_events_holder').show();
+            $('#my_events [data-toggle="tooltip"]').tooltip();
+            $('#my_events').find('[data-toggle="tooltip"], [data-toggle="tooltipster"]').tooltip();
+
+            if ('function' === typeof initConfirmActionPopovers) {
+                initConfirmActionPopovers();
+            }
+        }
+    });
+}
+
+function loadEvents($subscription, subscription_id) {
+    var $events_holder = $subscription.find('.js_events_holder'),
+        $events_list = $subscription.find('.js_events_list'),
+        start = $events_list.find('.js_calendar_subscription_event:visible').length;
+
+    $subscription.find('.js_spinning_wheel').show();
+    // if (start > 0) {
+    //hide the show more
+    $subscription.find('.js_calendar_subscription_show_more').parent().hide();
+
+    // }
+
+    $.ajax({
+        url: profile_action_url + '/ajaxSubscriptionEvents',
+        data: {
+            'subscription_id': subscription_id,
+            'start': start,
+            'timezone': $('select.js_lead_preferred_time_zone').val()
+        },
+        type: 'POST',
+        cache: false,
+        success: function(response){
+            if (response.html != '') {
+                $subscription.find('.js_events_list_header_row').show();
+                $subscription.find('.js_calendar_subscription_show_more').parent().before(response.html);
+                $subscription.find('.js_spinning_wheel').hide();
+                $subscription.find('[data-toggle="tooltip"], [data-toggle="tooltipster"]').tooltip();
+                if (response.show_more) {
+                    $subscription.find('.js_calendar_subscription_show_more').parent().show();
+                }
+
+                if ('function' === typeof initConfirmActionPopovers) {
+                    initConfirmActionPopovers();
+                }
+            } else {
+                loadCalendars();
+            }
+
+        }
+    });
+}
+
+function showResponsePass(data) {
+	result = $.parseJSON(data);
+
+	if (result.result == 'error') {
+        $('#'+result.result_field).addClass('error');
+		$('#ch_pass div[for="'+result.result_field+'"]').html(result.result_message).show();
+	} else {
+		$('.ch_pass_change').hide();
+		$('.ch_pass_change_success').show();
+		$('.ch_pass_save').hide();
+		$('.ch_pass_close').hide();
+	}
+
+	return false;
+}
+
+function isEmail(email) {
+	var regex = /^([a-zA-Z0-9_.+-])+\@(([a-zA-Z0-9-])+\.)+([a-zA-Z0-9]{2,4})+$/;
+	return regex.test(email);
+}
+
+function valid_lead_profile()
+{
+    var valid      = true,
+        first_name = $('#first_name').val().trim(),
+        email      = $('#email').val().trim();
+
+    if (first_name == '') {
+        $('#first_name').addClass('error');
+        $('#first_name_error_text').html('Required');
+        $('#first_name_error').fadeIn();
+
+        valid = false;
+    }
+
+    if (email == '') {
+        $('#email').addClass('error');
+        $('#email_error_text').html('Required');
+        $('#email_error').fadeIn();
+
+        valid = false;
+    } else {
+        if (!isEmail(email)) {
+            $('#email').addClass('error');
+            $('#email_error_text').html('Invalid email');
+            $('#email_error').fadeIn();
+
+            valid = false;
+        }
+    }
+
+    return valid;
+}
+
+/**
+ * Function called from the front_common.js file as a callback when the popover is shown
+ * @param $trigger
+ */
+
+function getCancelConfirmationContent($trigger) {
+    var popoverData = $trigger.data('bs.popover');
+
+    if ('undefined' !== typeof popoverData) {
+        var $popover = $(popoverData.tip());
+
+        if ($popover.hasClass('js_profile_cancel_popover')) {
+            var $popoverContent = $('.popover-content', $popover),
+                $subscription = $trigger.parents('.js_calendar_subscription_holder'),
+                cancelAction = $trigger.attr('data-action-cancel'),
+                eventId, subscriptionId,
+                singleEvent = 0;
+
+            if ('subscription' === cancelAction) {
+                eventId = 0;
+                subscriptionId = $trigger.attr('data-subscription-id');
+                singleEvent = $trigger.attr('data-single-event');
+            } else {
+                eventId = $trigger.attr('data-action-id');
+                subscriptionId = 0;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: profile_action_url + '/cancelConfirmationPopover',
+                data: {
+                    event_id: eventId,
+                    subscription_id: subscriptionId,
+                    single_event: singleEvent
+                },
+                success: function (response) {
+                    if (response['success']) {
+                        $popoverContent.html(response['html']);
+
+                        if ('subscription' === cancelAction) {
+                            $('.js_cal_cancel_action', $popover).addClass('js_cancel_subscription').removeClass('js_cal_cancel_action');
+                        } else {
+                            $('.js_cal_cancel_block_1 .js_cal_cancel_action', $popover).addClass('js_cancel_event').removeClass('js_cal_cancel_action');
+                            $('.js_cal_cancel_block_2 .js_cal_cancel_action', $popover).addClass('js_cancel_subscription').removeClass('js_cal_cancel_action');
+                        }
+
+                        $trigger.popover('recalculatePosition');
+                    } else {
+                        setTimeout(function(){
+                            subscriptionId = $trigger.attr('data-subscription-id');
+
+                            $subscription.find('.js_calendar_subscription_event').remove();
+
+                            loadEvents($subscription, subscriptionId);
+                        }, 300);
+                    }
+                }
+            });
+        }
+    }
+}

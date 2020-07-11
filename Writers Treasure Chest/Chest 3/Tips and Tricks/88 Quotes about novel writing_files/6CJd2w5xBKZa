@@ -1,0 +1,415 @@
+var membership_portal_path_url = 'https://scrivenercoach.kartra.com/portal/6CJd2w5xBKZa';
+
+$(document).ready(function(){
+
+    var $headerElement = $('.js_header_element');
+
+    if ('function' === typeof setBackgroundContrast) {
+        setBackgroundContrast($headerElement, $headerElement);
+    }
+
+    // sanitize the content; remove ckeditor classes
+    $('.cke_editable_inline').each(function () {
+        $(this).removeClass('cke_editable cke_editable_inline cke_contents_ltr cke_show_borders js_ckeditor').
+                addClass('wysiwyg_printout').
+                removeAttr('style title data-contenttype data-text_block_nr tabindex spellcheck role aria-label aria-describedby');
+    });
+
+    $('[contenteditable="true"]').removeAttr('contenteditable');
+
+
+    loadOptins();
+
+    if (window['jsVars'].mobile_version == 0) {
+        $('ul.nav li.dropdown').hover(function () {
+            $(this).find('.dropdown-menu').stop(true, true).delay(50).fadeIn(200);
+            $(this).find('.dropdown-toggle').delay(200).addClass('hover');
+            var winWidth = $(window).width();
+            var offset = $(this).offset();
+
+            if (winWidth <= 992) {
+                var dropdownWidth = 280;
+            } else {
+                var dropdownWidth = 400;
+            }
+            if (offset.left + dropdownWidth >= winWidth) {
+                $(this).find('.dropdown-menu').addClass('dropleft');
+            } else {
+                $(this).find('.dropdown-menu').removeClass('dropleft');
+            }
+        }, function () {
+            $(this).find('.dropdown-menu').stop(true, true).delay(50).fadeOut(200);
+            $(this).find('.dropdown-toggle').delay(200).removeClass('hover');
+        });
+
+        $(document).on("click", ".js_nav_menu > li > a[data-item]", function() {
+            var dataItem = $(this).attr('data-item');
+
+            if ($(this).parent('li').hasClass('active')){
+                $(this).parent('li').removeClass('active');
+                $(this).siblings("div[data-item]").slideUp(300);
+            }else{
+                $('.js_nav_menu > li').removeClass('active');
+                $('.js_nav_menu > li > div[data-item]').slideUp(300);
+                $(this).siblings("div[data-item='" + dataItem + "']").slideDown(300);
+                $(this).parent('li').addClass('active');
+
+            }
+        });
+
+        $(document).on("click", ".js_sidebar_toggle", function() {
+            $(this).parent('.menu').addClass('open');
+            $('body').addClass('sidebar_open');
+        });
+
+        $(document).on("click", ".js_sidebar_close", function() {
+            $(this).parent('.menu').removeClass('open');
+            $('body').removeClass('sidebar_open');
+        });
+
+        $(document).on("click", ".menu_wrapper a[data-toggle='dropdown']", function() {
+            var scrollTop = $(document).scrollTop();
+            var windowHeight = $(window).height();
+            var offsetLink = $(this).offset();
+            var offsetLink2 = offsetLink.top - $(document).scrollTop();
+            var offsetBottom = windowHeight - (offsetLink.top);
+            var offsetBottom2 = windowHeight - (offsetLink.top) + $(document).scrollTop();
+            var heightDropMenu = $(this).siblings('.dropdown-menu').height();
+            var linkHeight = $(this).height();
+
+            if (heightDropMenu < offsetLink2 && heightDropMenu > offsetBottom2){
+                $(this).siblings('.dropdown-menu').addClass('dropup').removeClass('dropmiddle');
+                $(this).siblings('.dropdown-menu').css('top', 'auto');
+                console.log('dropup')
+            }
+            else if(heightDropMenu > offsetLink2 && heightDropMenu < offsetBottom2){
+                $(this).siblings('.dropdown-menu').removeClass('dropup').removeClass('dropmiddle');
+                $(this).siblings('.dropdown-menu').css('top', '0');
+            }else if(heightDropMenu > offsetLink2 && heightDropMenu > offsetBottom2){
+                $(this).siblings('.dropdown-menu').addClass('dropmiddle').removeClass('dropup');
+                $(this).siblings('.dropdown-menu').css('top', - (heightDropMenu / 2) + (linkHeight / 2));
+            }
+
+        })
+    } else {
+        $(document).on('click', '.js_favorite_trigger', function () {
+            $('.js_search_block').slideUp();
+            $(this).tooltip('hide');
+
+            if ($(this).parent('li').hasClass('active')) {
+                $('.js_favorites_dropdown li').removeClass('active');
+                $('.js_favorite_mobile').slideUp();
+            } else {
+                $('.js_favorite_mobile').slideDown();
+                $('.js_favorites_dropdown li').removeClass('active');
+                $(this).parent('li').addClass('active');
+            }
+        });
+
+        $(document).on('click', '.js_show_search', function () {
+            $('.js_favorite_mobile').slideUp();
+            $(this).tooltip('hide');
+
+            if ($(this).parents('li').first().hasClass('active')) {
+                $('.js_favorites_dropdown li').removeClass('active');
+                $('.js_search_block').slideUp();
+            } else {
+                $('.js_search_block').slideDown();
+                $('.js_favorites_dropdown li').removeClass('active');
+                $(this).parents('li').first().addClass('active');
+            }
+        });
+    }
+
+    // BOOTSTRAP TOOLTIP
+    $(function () {
+        $('[data-toggle="tooltip"]').tooltip({
+            container: 'body',
+            placement: 'top'
+        });
+
+        $('[data-toggle-alt="tooltip"]').tooltip({
+            container: 'body',
+            placement: 'bottom'
+        });
+    })
+
+    $(document).on('click', '.js_main_menu', function () {
+        if ($(this).parent('li').hasClass('selected')) {
+            $(this).parent('li').find('ul.js_subcategory_section').slideUp(function(){
+                $(this).parent('li').removeClass('selected');
+            });
+
+        } else {
+            $('.js_main_menu').parent('li').removeClass('selected');
+            $('.js_main_menu').not(this).parent('li').find('ul.js_subcategory_section').slideUp();
+            $(this).parent('li').addClass('selected');
+            $(this).parent('li').find('ul.js_subcategory_section').slideDown();
+        }
+    });
+
+    $(document).on('click', '.js_expand_subcategory', function () {
+        if ($(this).parents('.js_subcategory_name').hasClass('selected')) {
+            $(this).parents('.js_subcategory_name').removeClass('selected');
+            $(this).parents('.js_subcategory_name').find('i.js_subcategory_icon').text('+');
+            $(this).parents('.js_subcategory_name').find('ul.dropdown_menu_category').slideUp();
+        } else {
+            $('.js_expand_subcategory').parents('.js_subcategory_name').removeClass('selected');
+            $('.js_expand_subcategory').not(this).parents('.js_subcategory_name').find('ul.dropdown_menu_category').slideUp();
+            $('.js_expand_subcategory').parents('.js_subcategory_name').find('i.js_subcategory_icon').text('+');
+            $(this).parents('.js_subcategory_name').addClass('selected');
+            $(this).parents('.js_subcategory_name').find('i.js_subcategory_icon').text('-');
+            $(this).parents('.js_subcategory_name').find('ul.dropdown_menu_category').slideDown();
+
+        }
+    });
+
+    $(".js_open_post").click(function(){
+        if ($(this).hasClass('js_progress_prev_next') || $(this).attr('href').indexOf('javascript') !== -1) {
+            $(".js_teaser_modal_front .js_teaser_modal_body").html($(".js_teaser_modal_content_front[data-post_id='" + $(this).attr('data-post_id') + "']").html());
+            var countdown = $('.js_teaser_modal_front .js_countdown_front');
+
+            if (countdown.length > 0) {
+                var fontSize = 60;
+                var captionSize = 12;
+
+                var date_to_timezone = moment.tz(membership_countdown[$(this).attr('data-post_id')], "America/New_York").format();
+                var date_to = new Date(date_to_timezone);
+
+                if( countdown.hasClass('small')) {
+                    fontSize = 30;
+                    captionSize = 10;
+                }
+
+                if (window['jsVars'].mobile_version == 1) {
+                    fontSize = 40;
+                    captionSize = 10;
+                }
+
+                countdown.empty();
+
+                countdown.timeTo({
+                    fontFamily: 'Lato',
+                    fontSize: fontSize,
+                    timeTo: date_to,
+                    displayCaptions: true,
+                    captionSize: captionSize
+                });
+            }
+
+            $('.js_teaser_modal_front').modal('show');
+        }
+    });
+
+    $(document).on('click', '.js_progress_prev_next', function () {
+        if (typeof $(this).data('url') !== 'undefined' && $(this).data('url') !== '') {
+            window.location = $(this).data('url');
+        }
+    });
+
+    if ($('.js_progress_bar_wrapper').length) {
+        $('body').addClass('w_progressbar');
+        $('.js_progress_bar_wrapper').addClass('open');
+    }
+
+    $(document).on('click', '.js_finish_button', function () {
+        $.ajax({
+            url: "https://scrivenercoach.kartra.com/portal/6CJd2w5xBKZa/finishProgressBar/",
+            data: {level_id: $(this).data('level-id')},
+            type:"POST",
+        })
+        .done(function( data ) {
+            if (data.html !== '') {
+                $('#badge_modal .js_progress_badge_body').html(data.html);
+                $('#badge_modal').modal('show');
+            }
+
+            $('.js_progress_bar_wrapper').removeClass('open');
+            $('body').removeClass('w_progressbar');
+        });
+    });
+
+    $(".js_search_membership").click(function(){
+        make_search();
+    });
+
+    $("#search_tag").keypress(function (e) {
+         var key = e.which;
+         if(key == 13) {
+            make_search();
+            return false;
+         }
+    });
+
+    $(".js_clear_search").click(function(){
+        window.location = "https://scrivenercoach.kartra.com/portal/6CJd2w5xBKZa/0";
+    });
+
+    if ($('#post_comment_div .js_comment_ta').length > 0) {
+    	$('#post_comment_div .js_comment_ta').css('overflow', 'hidden').autogrow();
+    }
+
+    //generates the favorites menu
+    get_favorites();
+
+    $(document).on('click', '.js_show_search', function () {
+         $(this).tooltip('hide');
+    });
+
+    // handles the host share wrapper display
+    if ($('.js_social_share_li[style*="display: block"]').length == 0) {
+        $(".js_main_host_div_wrapper").hide()
+    } else {
+        $(".js_main_host_div_wrapper").show()
+    }
+
+    $("#image_logo").attr("src",$("#logo_path").val());
+
+    if ('function' === typeof initConfirmActionPopovers) {
+        initConfirmActionPopovers();
+    }
+
+    $(document).on("click","#post_action_favorite",function(){
+        if($(this).hasClass('active')){
+            var action = 0;
+        }else{
+            var action = 1;
+        }
+
+        $(this).tooltip('hide');
+        $.ajax({
+            url: "https://scrivenercoach.kartra.com/portal/6CJd2w5xBKZa/change_favorite_status/",
+            type:"POST",
+            data: {
+                post_id: $("#post_id").val(),
+                action: action
+            }
+        })
+        .done(function( data ) {
+            if (window['jsVars'].mobile_version) {
+                var favorites_container = '.js_favorite_mobile';
+                var favorite_menu_container = '.js_favorites_li';
+                var favorite_menu_icon = '.js_favorite_trigger';
+            } else {
+                var favorites_container = '.js_favorites_li';
+                var favorite_menu_container = '.js_favorites_li';
+                var favorite_menu_icon = '';
+
+            }
+
+            if (action == 1) {
+                $("#post_action_favorite").attr("title", "Remove from my favorites").addClass('active').tooltip('fixTitle');
+                $(".js_menu li[data-post_id='" + $("#post_id").val() + "']").find(".js_favorite").attr("title", "Favorite post").addClass("active").tooltip('fixTitle').tooltip('hide');
+            } else {
+                $("#post_action_favorite").attr("title", "Add to my favorites").removeClass('active').tooltip('fixTitle');
+                $(".js_menu li[data-post_id='" + $("#post_id").val() + "']").find(".js_favorite").attr("title", "Standard post").removeClass("active").tooltip('fixTitle').tooltip('hide');
+            }
+
+            var res = jQuery.parseJSON(data);
+
+            if (res.favorites == 0) {
+                $(".js_favorites_li").hide();
+                if (window['jsVars'].mobile_version) {
+                    $(favorite_menu_container).hide().removeClass('active');
+                    $(favorites_container).html('');
+                }
+            } else {
+                $(favorite_menu_container).show();
+                $(favorites_container).html(res.favorites_menu);
+                $('.js_favorites_li li[data-toggle="tooltip"]').tooltip({
+                    container: 'body',
+                    placement: 'top'
+                });
+            }
+        })
+    })
+
+    $('.js_teaser_modal_front').on('hidden.bs.modal', function(){
+        $('.js_teaser_modal_front iframe').attr('src', '');
+    });
+
+    $( window ).resize(function() {
+        adjustProgressBar();
+    });
+});
+
+adjustProgressBar();
+
+function get_favorites() {
+    $.ajax({
+        url: "https://scrivenercoach.kartra.com/portal/6CJd2w5xBKZa/ajax_favorites_menu/"+$('#membership_hash').val(),
+        type:"GET"
+    }).done(function( data ) {
+        json_data = jQuery.parseJSON(data);
+        if (json_data.favorites != 0) {
+            if (window['jsVars'].mobile_version == 1) {
+                $('.js_favorite_mobile').html(json_data.html);
+                $('.js_favorites_li').show();
+                $('.js_favorites_li li[data-toggle="tooltip"]').tooltip({
+                    container: 'body',
+                    placement: 'top'
+                });
+
+            } else {
+                $(".js_favorites_li").show();
+                $(".js_favorites_li").html(json_data.html);
+                $('.js_favorites_li li[data-toggle="tooltip"]').tooltip({
+                    container: 'body',
+                    placement: 'top'
+                });
+            }
+        } else {
+            $(".js_favorites_li").hide();
+        }
+    })
+}
+
+function make_search() {
+    window.location = "https://scrivenercoach.kartra.com/portal/6CJd2w5xBKZa/0?search="+$("#search_tag").val();
+}
+
+function adjustProgressBar() {
+    var breaking_point = window.jsVars.portal_template != 4 ? 767 : 1167;
+    if ($(window).width() <= breaking_point) {
+        var width = $('.js_mobile_progress_wrapper').width();
+        $('.js_mobile_progress_span').css('width', width).show();
+    }
+}
+
+// function used to load the optins inside membership posts
+function loadOptins() {
+    var spinnig_wheel = generateLoader('', 'js_spinnig_wheel w_text', '');
+
+    $('.js_optin_form_wrapper').each(function() {
+        var $self = $(this),
+            optin_hash = $self.data('optin-form-hash'),
+            optin_button_color = $self.data('optin-form-button-color')
+
+        if (typeof optin_hash !== 'undefined' && optin_hash) {
+            $self.after(spinnig_wheel);
+
+            $.ajax({
+                url: 'https://scrivenercoach.kartra.com/portal/6CJd2w5xBKZa/loadOptin/',
+                type: 'POST',
+                data: {
+                    optin_hash: optin_hash
+                }
+            }).done(function(data) {
+                if (typeof data.html !== 'undefined') {
+                    if (data.gdpr !== '') {
+                        window.jsVars.gdpr_settings = data.gdpr;
+                    }
+
+                    $self.hide();
+                    $self.html(data.html);
+                    $self.find('.optin_checkout_submit_btn').css('background', optin_button_color);
+                    setTimeout(function () {
+                        $self.parent().find('.js_spinnig_wheel').hide();
+                        $self.fadeIn(300);
+                    }, 500);
+                }
+            });
+        }
+
+    });
+}
